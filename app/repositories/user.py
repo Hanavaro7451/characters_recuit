@@ -18,3 +18,8 @@ class UserRepository:
         query: Select[tuple[User]] = select(User).where(User.username == username)
         result = await self.session.scalars(query)
         return result.one_or_none()
+
+    async def get_by_id(self, user_id: int) -> User | None:
+        query: Select[tuple[User]] = select(User).where(User.id == user_id)
+        result = await self.session.scalars(query)
+        return result.one_or_none()

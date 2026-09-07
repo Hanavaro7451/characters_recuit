@@ -12,3 +12,9 @@ class ConflictError(AppError):
     """Ошибка конфликта состояния"""
 
     status_code = 409
+
+
+class UnauthorizedError(AppError):
+    """Ошибка авторизации"""
+
+    status_code = 401

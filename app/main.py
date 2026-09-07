@@ -28,6 +28,7 @@ async def app_error_handler(
         content={"detail": error.detail},
     )
 
+
 def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
