@@ -9,7 +9,7 @@ from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import JWTManager
 from app.models import User
 from app.repositories.user import UserRepository
-from app.services.users import AuthService
+from app.services.auth import AuthService
 
 
 @pytest.fixture
@@ -76,6 +76,27 @@ async def test_register_rolls_back_after_unique_constraint_conflict(
 
     session.rollback.assert_awaited_once()
     session.commit.assert_not_awaited()
+
+
+async def test_register_rejects_username_of_inactive_user(
+    service: AuthService,
+    session: AsyncMock,
+    repo: AsyncMock,
+) -> None:
+    repo.get_by_username.return_value = User(
+        id=1,
+        username="alice",
+        password_hash="password-hash",
+        is_active=False,
+    )
+
+    with pytest.raises(ConflictError):
+        await service.register("Alice", "password123")
+
+    repo.get_by_username.assert_awaited_once_with("alice")
+    repo.create.assert_not_awaited()
+    session.commit.assert_not_awaited()
+    session.rollback.assert_not_awaited()
 
 
 async def test_get_current_user_returns_active_user(

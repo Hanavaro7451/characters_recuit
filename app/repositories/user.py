@@ -23,3 +23,14 @@ class UserRepository:
         query: Select[tuple[User]] = select(User).where(User.id == user_id)
         result = await self.session.scalars(query)
         return result.one_or_none()
+
+    async def update_username(self, user: User, new_username: str) -> User:
+        user.username = new_username
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user
+
+    async def deactivate(self, user: User) -> None:
+        user.is_active = False
+        await self.session.flush()
+        await self.session.refresh(user)

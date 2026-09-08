@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.models import User
-from app.services.users import AuthService
+from app.services.auth import AuthService
+from app.services.user import UserService
 
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 
@@ -32,3 +33,10 @@ async def get_current_user(
 
 
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
+
+
+def get_user_service(session: SessionDependency) -> UserService:
+    return UserService(session)
+
+
+UserServiceDependency = Annotated[UserService, Depends(get_user_service)]

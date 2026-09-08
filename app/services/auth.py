@@ -25,7 +25,7 @@ class AuthService:
         normalized_username = normalize_username(username)
         existing_user = await self.repo.get_by_username(normalized_username)
         if existing_user:
-            raise ConflictError("User with username already exists")
+            raise ConflictError("Имя пользователя уже занято")
 
         password_hash = self.password_hasher.hash_password(password)
         user = User(
@@ -38,7 +38,7 @@ class AuthService:
             await self.session.commit()
         except IntegrityError as error:
             await self.session.rollback()
-            raise ConflictError("User with username already exists") from error
+            raise ConflictError("Имя пользователя уже занято") from error
 
         return user
 
@@ -71,7 +71,7 @@ class AuthService:
             subject = payload.get("sub")
 
             if token_type != "access" or not isinstance(subject, str):
-                raise ValueError("Некорректные claims токена")
+                raise ValueError("Некорректные данные токена")
 
             user_id = int(subject)
             if user_id < 1:

@@ -22,3 +22,12 @@ class UserResponse(BaseModel):
     username: str = Field(..., min_length=3, max_length=255)
     is_active: bool
     created_at: datetime
+
+
+class UserUpdate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=255)
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, username: str) -> str:
+        return normalize_username(username)
