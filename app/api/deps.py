@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.models import User
 from app.services.auth import AuthService
+from app.services.campaign import CampaignService
+from app.services.campaign_member import CampaignMemberService
 from app.services.user import UserService
 
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
@@ -40,3 +42,25 @@ def get_user_service(session: SessionDependency) -> UserService:
 
 
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
+
+
+def get_campaign_service(session: SessionDependency) -> CampaignService:
+    return CampaignService(session)
+
+
+CampaignServiceDependency = Annotated[
+    CampaignService,
+    Depends(get_campaign_service),
+]
+
+
+def get_campaign_member_service(
+    session: SessionDependency,
+) -> CampaignMemberService:
+    return CampaignMemberService(session)
+
+
+CampaignMemberServiceDependency = Annotated[
+    CampaignMemberService,
+    Depends(get_campaign_member_service),
+]

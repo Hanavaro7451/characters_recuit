@@ -18,3 +18,9 @@ class UnauthorizedError(AppError):
     """Ошибка авторизации"""
 
     status_code = 401
+
+
+class NotFoundError(AppError):
+    """Сущность не найдена"""
+
+    status_code = 404
