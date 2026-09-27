@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError, NotFoundError
-from app.domain.enums import CampaignMemberRole
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.domain.enums import CampaignMemberRole, CampaignStatus
 from app.models import Campaign, CampaignMember, User
 from app.repositories.campaign import CampaignRepository
 from app.repositories.campaign_member import CampaignMemberRepository
@@ -195,3 +195,86 @@ async def test_get_campaign_for_member_raises_not_found(
         campaign_id=10,
         user_id=current_user.id,
     )
+
+
+async def test_update_invite_code_allows_master(
+    service: CampaignService,
+    session: AsyncMock,
+    campaign_repo: AsyncMock,
+    member_repo: AsyncMock,
+    current_user: User,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    member_repo.get_by_campaign_and_user.return_value = CampaignMember(
+        campaign_id=10, user_id=current_user.id, role=CampaignMemberRole.MASTER
+    )
+    campaign = Campaign(id=10, status=CampaignStatus.ACTIVE)
+    campaign_repo.get_campaign_by_member.return_value = campaign
+    monkeypatch.setattr(
+        "app.services.campaign.generate_invite_code", lambda: "newcode123"
+    )
+
+    result = await service.update_invite_code(current_user, campaign_id=10)
+
+    assert result is campaign
+    member_repo.get_by_campaign_and_user.assert_awaited_once_with(10, current_user.id)
+    campaign_repo.get_campaign_by_member.assert_awaited_once_with(10, current_user.id)
+    campaign_repo.update_invite_code.assert_awaited_once_with("newcode123", campaign)
+    session.commit.assert_awaited_once()
+    session.rollback.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_error"),
+    [(None, NotFoundError), (CampaignMemberRole.PLAYER, ForbiddenError)],
+)
+async def test_update_invite_code_denies_access_before_loading_campaign(
+    service: CampaignService,
+    session: AsyncMock,
+    campaign_repo: AsyncMock,
+    member_repo: AsyncMock,
+    current_user: User,
+    role: CampaignMemberRole | None,
+    expected_error: type[NotFoundError] | type[ForbiddenError],
+) -> None:
+    member_repo.get_by_campaign_and_user.return_value = (
+        CampaignMember(campaign_id=10, user_id=current_user.id, role=role)
+        if role is not None
+        else None
+    )
+
+    with pytest.raises(expected_error):
+        await service.update_invite_code(current_user, campaign_id=10)
+
+    member_repo.get_by_campaign_and_user.assert_awaited_once_with(10, current_user.id)
+    campaign_repo.get_campaign_by_member.assert_not_awaited()
+    campaign_repo.update_invite_code.assert_not_awaited()
+    session.commit.assert_not_awaited()
+    session.rollback.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("campaign_status", "expected_error"),
+    [(None, NotFoundError), (CampaignStatus.COMPLETED, ConflictError)],
+)
+async def test_update_invite_code_rejects_missing_or_completed_campaign(
+    service: CampaignService,
+    session: AsyncMock,
+    campaign_repo: AsyncMock,
+    member_repo: AsyncMock,
+    current_user: User,
+    campaign_status: CampaignStatus | None,
+    expected_error: type[NotFoundError] | type[ConflictError],
+) -> None:
+    member_repo.get_by_campaign_and_user.return_value = CampaignMember(
+        campaign_id=10, user_id=current_user.id, role=CampaignMemberRole.MASTER
+    )
+    campaign_repo.get_campaign_by_member.return_value = (
+        Campaign(id=10, status=campaign_status) if campaign_status is not None else None
+    )
+
+    with pytest.raises(expected_error):
+        await service.update_invite_code(current_user, campaign_id=10)
+
+    campaign_repo.update_invite_code.assert_not_awaited()
+    session.commit.assert_not_awaited()

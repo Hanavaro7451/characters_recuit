@@ -7,6 +7,7 @@ from app.models.campaign import CampaignMember
 from app.models.user import User
 from app.repositories.campaign import CampaignRepository
 from app.repositories.campaign_member import CampaignMemberRepository
+from app.services.campaign_access import require_campaign_master
 
 
 class CampaignMemberService:
@@ -42,3 +43,9 @@ class CampaignMemberService:
             raise ConflictError("Не удалось добавить игрока") from error
 
         return member
+
+    async def get_list_by_campaign(
+        self, campaign_id: int, current_user: User
+    ) -> list[CampaignMember]:
+        await require_campaign_master(self.member_repo, campaign_id, current_user.id)
+        return await self.member_repo.list_by_campaign_id(campaign_id)

@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.domain.enums import CampaignMemberRole, CampaignStatus
 from app.models import Campaign, CampaignMember, User
 from app.repositories.campaign import CampaignRepository
@@ -84,6 +84,58 @@ async def test_join_campaign_creates_player_membership(
     assert result.role == CampaignMemberRole.PLAYER
     session.commit.assert_awaited_once()
     session.rollback.assert_not_awaited()
+
+
+async def test_list_members_allows_master(
+    service: CampaignMemberService,
+    member_repo: AsyncMock,
+    current_user: User,
+) -> None:
+    master = CampaignMember(
+        id=1,
+        campaign_id=10,
+        user_id=current_user.id,
+        role=CampaignMemberRole.MASTER,
+    )
+    player = CampaignMember(
+        id=2,
+        campaign_id=10,
+        user_id=3,
+        role=CampaignMemberRole.PLAYER,
+    )
+    member_repo.get_by_campaign_and_user.return_value = master
+    member_repo.list_by_campaign_id.return_value = [master, player]
+
+    result = await service.get_list_by_campaign(10, current_user)
+
+    assert result == [master, player]
+    member_repo.get_by_campaign_and_user.assert_awaited_once_with(10, current_user.id)
+    member_repo.list_by_campaign_id.assert_awaited_once_with(10)
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_error"),
+    [(CampaignMemberRole.PLAYER, ForbiddenError), (None, NotFoundError)],
+    ids=["player", "non-member"],
+)
+async def test_list_members_denies_access_before_loading_members(
+    service: CampaignMemberService,
+    member_repo: AsyncMock,
+    current_user: User,
+    role: CampaignMemberRole | None,
+    expected_error: type[ForbiddenError] | type[NotFoundError],
+) -> None:
+    member_repo.get_by_campaign_and_user.return_value = (
+        CampaignMember(campaign_id=10, user_id=current_user.id, role=role)
+        if role is not None
+        else None
+    )
+
+    with pytest.raises(expected_error):
+        await service.get_list_by_campaign(10, current_user)
+
+    member_repo.get_by_campaign_and_user.assert_awaited_once_with(10, current_user.id)
+    member_repo.list_by_campaign_id.assert_not_awaited()
 
 
 @pytest.mark.parametrize("campaign_status", [None, CampaignStatus.COMPLETED])

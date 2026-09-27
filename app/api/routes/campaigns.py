@@ -9,6 +9,7 @@ from app.api.deps import (
 from app.schemas.campaign import (
     CampaignCreate,
     CampaignCreatedResponse,
+    CampaignInviteResponse,
     CampaignJoinRequest,
     CampaignMemberResponse,
     CampaignResponse,
@@ -29,6 +30,20 @@ async def create_campaign(
 ) -> CampaignCreatedResponse:
     campaign = await service.create(payload.name, current_user)
     return CampaignCreatedResponse.model_validate(campaign)
+
+
+@router.post(
+    "/{campaign_id}/invite/rotate",
+    response_model=CampaignInviteResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_invite(
+    campaign_id: int,
+    current_user: CurrentUserDependency,
+    service: CampaignServiceDependency,
+) -> CampaignInviteResponse:
+    campaign = await service.update_invite_code(current_user, campaign_id)
+    return CampaignInviteResponse.model_validate(campaign)
 
 
 @router.post(
@@ -68,3 +83,17 @@ async def get_campaign_by_member(
 ) -> CampaignResponse:
     campaign = await service.get_by_member(current_user, campaign_id)
     return CampaignResponse.model_validate(campaign)
+
+
+@router.get(
+    "/{campaign_id}/members",
+    response_model=list[CampaignMemberResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_campaign_members(
+    campaign_id: int,
+    current_user: CurrentUserDependency,
+    service: CampaignMemberServiceDependency,
+) -> list[CampaignMemberResponse]:
+    members = await service.get_list_by_campaign(campaign_id, current_user)
+    return [CampaignMemberResponse.model_validate(member) for member in members]

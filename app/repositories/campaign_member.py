@@ -28,3 +28,12 @@ class CampaignMemberRepository:
 
         result = await self.session.scalars(query)
         return result.one_or_none()
+
+    async def list_by_campaign_id(self, campaign_id: int) -> list[CampaignMember]:
+        query: Select[tuple[CampaignMember]] = (
+            select(CampaignMember)
+            .where(CampaignMember.campaign_id == campaign_id)
+            .order_by(CampaignMember.created_at)
+        )
+        result = await self.session.scalars(query)
+        return list(result.all())

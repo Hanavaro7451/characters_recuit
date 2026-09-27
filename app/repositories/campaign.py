@@ -21,6 +21,12 @@ class CampaignRepository:
         result = await self.session.scalars(query)
         return result.one_or_none()
 
+    async def update_invite_code(
+        self, new_invite_code: str, campaign: Campaign
+    ) -> None:
+        campaign.invite_code = new_invite_code
+        await self.session.flush()
+
     async def list_by_user_id(self, user_id: int) -> list[Campaign]:
         query: Select[tuple[Campaign]] = (
             select(Campaign)

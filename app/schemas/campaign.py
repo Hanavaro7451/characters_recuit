@@ -48,3 +48,13 @@ class CampaignMemberResponse(BaseModel):
     user_id: int = Field(..., ge=1)
     role: CampaignMemberRole
     created_at: datetime
+
+
+class CampaignInviteResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    invite_code: str = Field(
+        ...,
+        min_length=INVITE_CODE_LENGTH,
+        max_length=INVITE_CODE_LENGTH,
+    )

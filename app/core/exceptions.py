@@ -24,3 +24,9 @@ class NotFoundError(AppError):
     """Сущность не найдена"""
 
     status_code = 404
+
+
+class ForbiddenError(AppError):
+    """Недостаточно прав доступа"""
+
+    status_code = 403
