@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError
+from app.core.exceptions import ConflictError, NotFoundError
 from app.core.invites import generate_invite_code
 from app.domain.enums import CampaignMemberRole
 from app.models.campaign import Campaign, CampaignMember
@@ -40,4 +40,18 @@ class CampaignService:
             await self.session.rollback()
             raise ConflictError("Не удалось создать кампанию") from error
 
+        return campaign
+
+    async def list_for_user(self, current_user: User) -> list[Campaign]:
+        """Return campaigns available to the current user."""
+        return await self.campaign_repo.list_by_user_id(current_user.id)
+
+    async def get_by_member(
+        self, current_user: User, campaign_id: int
+    ) -> Campaign:
+        campaign = await self.campaign_repo.get_campaign_by_member(
+            campaign_id=campaign_id, user_id=current_user.id
+        )
+        if campaign is None:
+            raise NotFoundError("Кампания не найдена")
         return campaign

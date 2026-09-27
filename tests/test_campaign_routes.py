@@ -9,6 +9,7 @@ from app.api.deps import (
     get_campaign_service,
     get_current_user,
 )
+from app.core.exceptions import NotFoundError
 from app.domain.enums import CampaignMemberRole, CampaignStatus
 from app.main import app
 from app.models import Campaign, CampaignMember, User
@@ -86,6 +87,101 @@ async def test_join_campaign_route_returns_player_membership(
     assert response.json()["campaign_id"] == 10
     assert response.json()["role"] == "player"
     service.create.assert_awaited_once_with("invite1234", current_user)
+
+
+async def test_list_campaigns_route_returns_available_campaigns(
+    current_user: User,
+) -> None:
+    service = AsyncMock(spec=CampaignService)
+    service.list_for_user.return_value = [
+        Campaign(
+            id=10,
+            name="Dragon Hunters",
+            status=CampaignStatus.ACTIVE,
+            invite_code="invite1234",
+            created_by_id=current_user.id,
+            created_at=datetime.now(UTC),
+        ),
+        Campaign(
+            id=11,
+            name="Underdark",
+            status=CampaignStatus.ACTIVE,
+            invite_code="invite5678",
+            created_by_id=2,
+            created_at=datetime.now(UTC),
+        ),
+    ]
+    app.dependency_overrides[get_current_user] = lambda: current_user
+    app.dependency_overrides[get_campaign_service] = lambda: service
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/campaigns/")
+
+    assert response.status_code == 200
+    assert [campaign["id"] for campaign in response.json()] == [10, 11]
+    assert all("invite_code" not in campaign for campaign in response.json())
+    service.list_for_user.assert_awaited_once_with(current_user)
+
+
+async def test_list_campaigns_route_returns_empty_list(
+    current_user: User,
+) -> None:
+    service = AsyncMock(spec=CampaignService)
+    service.list_for_user.return_value = []
+    app.dependency_overrides[get_current_user] = lambda: current_user
+    app.dependency_overrides[get_campaign_service] = lambda: service
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/campaigns/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+    service.list_for_user.assert_awaited_once_with(current_user)
+
+
+async def test_get_campaign_route_returns_campaign_for_member(
+    current_user: User,
+) -> None:
+    service = AsyncMock(spec=CampaignService)
+    service.get_by_member.return_value = Campaign(
+        id=10,
+        name="Dragon Hunters",
+        status=CampaignStatus.ACTIVE,
+        invite_code="invite1234",
+        created_by_id=current_user.id,
+        created_at=datetime.now(UTC),
+    )
+    app.dependency_overrides[get_current_user] = lambda: current_user
+    app.dependency_overrides[get_campaign_service] = lambda: service
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/campaigns/10")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 10
+    assert response.json()["name"] == "Dragon Hunters"
+    assert "invite_code" not in response.json()
+    service.get_by_member.assert_awaited_once_with(current_user, 10)
+
+
+async def test_get_campaign_route_returns_not_found(
+    current_user: User,
+) -> None:
+    service = AsyncMock(spec=CampaignService)
+    service.get_by_member.side_effect = NotFoundError("Кампания не найдена")
+    app.dependency_overrides[get_current_user] = lambda: current_user
+    app.dependency_overrides[get_campaign_service] = lambda: service
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/campaigns/10")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Кампания не найдена"}
+    service.get_by_member.assert_awaited_once_with(current_user, 10)
 
 
 @pytest.mark.parametrize(

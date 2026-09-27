@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError
+from app.core.exceptions import ConflictError, NotFoundError
 from app.domain.enums import CampaignMemberRole
 from app.models import Campaign, CampaignMember, User
 from app.repositories.campaign import CampaignRepository
@@ -128,3 +128,70 @@ async def test_create_campaign_rolls_back_after_integrity_error(
     else:
         member_repo.create.assert_awaited_once()
         session.commit.assert_awaited_once()
+
+
+async def test_list_campaigns_for_user_returns_repository_result(
+    service: CampaignService,
+    campaign_repo: AsyncMock,
+    current_user: User,
+) -> None:
+    campaigns = [
+        Campaign(id=10, name="Dragon Hunters", created_by_id=current_user.id),
+        Campaign(id=11, name="Underdark", created_by_id=2),
+    ]
+    campaign_repo.list_by_user_id.return_value = campaigns
+
+    result = await service.list_for_user(current_user)
+
+    assert result == campaigns
+    campaign_repo.list_by_user_id.assert_awaited_once_with(current_user.id)
+
+
+async def test_list_campaigns_for_user_returns_empty_list(
+    service: CampaignService,
+    campaign_repo: AsyncMock,
+    current_user: User,
+) -> None:
+    campaign_repo.list_by_user_id.return_value = []
+
+    result = await service.list_for_user(current_user)
+
+    assert result == []
+    campaign_repo.list_by_user_id.assert_awaited_once_with(current_user.id)
+
+
+async def test_get_campaign_for_member_returns_repository_result(
+    service: CampaignService,
+    campaign_repo: AsyncMock,
+    current_user: User,
+) -> None:
+    campaign = Campaign(
+        id=10,
+        name="Dragon Hunters",
+        created_by_id=current_user.id,
+    )
+    campaign_repo.get_campaign_by_member.return_value = campaign
+
+    result = await service.get_by_member(current_user, campaign.id)
+
+    assert result is campaign
+    campaign_repo.get_campaign_by_member.assert_awaited_once_with(
+        campaign_id=campaign.id,
+        user_id=current_user.id,
+    )
+
+
+async def test_get_campaign_for_member_raises_not_found(
+    service: CampaignService,
+    campaign_repo: AsyncMock,
+    current_user: User,
+) -> None:
+    campaign_repo.get_campaign_by_member.return_value = None
+
+    with pytest.raises(NotFoundError):
+        await service.get_by_member(current_user, campaign_id=10)
+
+    campaign_repo.get_campaign_by_member.assert_awaited_once_with(
+        campaign_id=10,
+        user_id=current_user.id,
+    )

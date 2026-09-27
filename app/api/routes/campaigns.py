@@ -11,6 +11,7 @@ from app.schemas.campaign import (
     CampaignCreatedResponse,
     CampaignJoinRequest,
     CampaignMemberResponse,
+    CampaignResponse,
 )
 
 router = APIRouter()
@@ -42,3 +43,28 @@ async def join_campaign(
 ) -> CampaignMemberResponse:
     member = await service.create(payload.invite_code, current_user)
     return CampaignMemberResponse.model_validate(member)
+
+
+@router.get(
+    "/",
+    response_model=list[CampaignResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_campaigns(
+    current_user: CurrentUserDependency,
+    service: CampaignServiceDependency,
+) -> list[CampaignResponse]:
+    campaigns = await service.list_for_user(current_user)
+    return [CampaignResponse.model_validate(campaign) for campaign in campaigns]
+
+
+@router.get(
+    "/{campaign_id}", response_model=CampaignResponse, status_code=status.HTTP_200_OK
+)
+async def get_campaign_by_member(
+    campaign_id: int,
+    current_user: CurrentUserDependency,
+    service: CampaignServiceDependency,
+) -> CampaignResponse:
+    campaign = await service.get_by_member(current_user, campaign_id)
+    return CampaignResponse.model_validate(campaign)
