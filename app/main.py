@@ -32,7 +32,7 @@ async def app_error_handler(
 def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
-        debug=settings.debug,
+        debug=settings.app_debug,
         lifespan=lifespan,
     )
     application.add_exception_handler(

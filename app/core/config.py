@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Characters Service"
     app_env: Literal["development", "testing", "production"] = "development"
-    debug: bool = False
+    app_debug: bool = False
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     database_url: str
