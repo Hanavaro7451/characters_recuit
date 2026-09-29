@@ -15,7 +15,9 @@ class Campaign(Base, TimestampMixin):
     status: Mapped[CampaignStatus] = mapped_column(
         Enum(CampaignStatus), default=CampaignStatus.ACTIVE
     )
-    invite_code: Mapped[str] = mapped_column(String(255), unique=True)
+    invite_code: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
     created_by_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     created_by: Mapped["User"] = relationship(
         "User", back_populates="created_campaigns"

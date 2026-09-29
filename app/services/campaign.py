@@ -1,4 +1,4 @@
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError
@@ -61,7 +61,28 @@ class CampaignService:
             await self.session.commit()
         except IntegrityError as error:
             await self.session.rollback()
-            raise ConflictError("Не обновить код приглашения") from error
+            raise ConflictError("Не удалось обновить код приглашения") from error
+
+        return campaign
+
+    async def revoke_invite_code(
+        self, current_user: User, campaign_id: int
+    ) -> Campaign:
+        await require_campaign_master(self.member_repo, campaign_id, current_user.id)
+
+        campaign = await self.campaign_repo.get_campaign_by_member(
+            campaign_id, current_user.id
+        )
+        if campaign is None:
+            raise NotFoundError("Кампания не найдена")
+        if campaign.status == CampaignStatus.COMPLETED:
+            raise ConflictError("Кампания завершена")
+        try:
+            await self.campaign_repo.clear_invite_code(campaign)
+            await self.session.commit()
+        except SQLAlchemyError as error:
+            await self.session.rollback()
+            raise error
 
         return campaign
 

@@ -27,6 +27,14 @@ class CampaignRepository:
         campaign.invite_code = new_invite_code
         await self.session.flush()
 
+
+    async def clear_invite_code(
+        self, campaign: Campaign
+    ) -> None:
+        campaign.invite_code = None
+        await self.session.flush()
+
+
     async def list_by_user_id(self, user_id: int) -> list[Campaign]:
         query: Select[tuple[Campaign]] = (
             select(Campaign)

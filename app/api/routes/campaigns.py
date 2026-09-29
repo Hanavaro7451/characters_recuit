@@ -47,6 +47,18 @@ async def update_invite(
 
 
 @router.post(
+    "/{campaign_id}/invite/revoke",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def revoke_invite(
+    campaign_id: int,
+    current_user: CurrentUserDependency,
+    service: CampaignServiceDependency,
+) -> None:
+    await service.revoke_invite_code(current_user, campaign_id)
+
+
+@router.post(
     "/join",
     response_model=CampaignMemberResponse,
     status_code=status.HTTP_201_CREATED,
