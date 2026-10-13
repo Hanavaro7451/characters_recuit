@@ -41,7 +41,11 @@ class CampaignMember(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     user: Mapped["User"] = relationship("User", back_populates="campaign_members")
     role: Mapped[CampaignMemberRole] = mapped_column(Enum(CampaignMemberRole))
+    character: Mapped["Character | None"] = relationship(
+        "Character", back_populates="campaign_member"
+    )
 
 
 if TYPE_CHECKING:
+    from app.models.character import Character
     from app.models.user import User

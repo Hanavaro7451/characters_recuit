@@ -4,11 +4,14 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import UnauthorizedError
 from app.db.session import get_session
 from app.models import User
 from app.services.auth import AuthService
 from app.services.campaign import CampaignService
 from app.services.campaign_member import CampaignMemberService
+from app.services.catalog import CatalogService
+from app.services.character import CharacterService
 from app.services.user import UserService
 
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
@@ -21,16 +24,18 @@ def get_auth_service(session: SessionDependency) -> AuthService:
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
 
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     credentials: Annotated[
-        HTTPAuthorizationCredentials,
+        HTTPAuthorizationCredentials | None,
         Depends(bearer_scheme),
     ],
     service: AuthServiceDependency,
 ) -> User:
+    if credentials is None:
+        raise UnauthorizedError("Требуется авторизация")
     return await service.get_current_user(credentials.credentials)
 
 
@@ -63,4 +68,20 @@ def get_campaign_member_service(
 CampaignMemberServiceDependency = Annotated[
     CampaignMemberService,
     Depends(get_campaign_member_service),
+]
+
+
+def get_catalog_service(session: SessionDependency) -> CatalogService:
+    return CatalogService(session)
+
+
+CatalogServiceDependency = Annotated[CatalogService, Depends(get_catalog_service)]
+
+
+def get_character_service(session: SessionDependency) -> CharacterService:
+    return CharacterService(session)
+
+
+CharacterServiceDependency = Annotated[
+    CharacterService, Depends(get_character_service)
 ]

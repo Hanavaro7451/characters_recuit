@@ -9,6 +9,7 @@ from app.api.deps import (
 from app.schemas.campaign import (
     CampaignCreate,
     CampaignCreatedResponse,
+    CampaignInviteReadResponse,
     CampaignInviteResponse,
     CampaignJoinRequest,
     CampaignMemberResponse,
@@ -16,6 +17,20 @@ from app.schemas.campaign import (
 )
 
 router = APIRouter()
+
+
+@router.get(
+    "/{campaign_id}/invite",
+    response_model=CampaignInviteReadResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_invite(
+    campaign_id: int,
+    current_user: CurrentUserDependency,
+    service: CampaignServiceDependency,
+) -> CampaignInviteReadResponse:
+    campaign = await service.get_invite_code(current_user, campaign_id)
+    return CampaignInviteReadResponse.model_validate(campaign)
 
 
 @router.post(

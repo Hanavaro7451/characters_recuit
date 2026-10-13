@@ -1,0 +1,7 @@
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
+
+[agents]
+enabled = true
+# Лимит открытых потоков специалистов; главный поток не учитывается.
+max_concurrent_threads_per_session = 2

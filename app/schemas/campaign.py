@@ -58,3 +58,13 @@ class CampaignInviteResponse(BaseModel):
         min_length=INVITE_CODE_LENGTH,
         max_length=INVITE_CODE_LENGTH,
     )
+
+
+class CampaignInviteReadResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    invite_code: str | None = Field(
+        ...,
+        min_length=INVITE_CODE_LENGTH,
+        max_length=INVITE_CODE_LENGTH,
+    )

@@ -30,3 +30,9 @@ class ForbiddenError(AppError):
     """Недостаточно прав доступа"""
 
     status_code = 403
+
+
+class UnprocessableError(AppError):
+    """Запрос содержит недопустимые значения."""
+
+    status_code = 422

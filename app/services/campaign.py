@@ -65,6 +65,17 @@ class CampaignService:
 
         return campaign
 
+    async def get_invite_code(
+        self, current_user: User, campaign_id: int
+    ) -> Campaign:
+        await require_campaign_master(self.member_repo, campaign_id, current_user.id)
+        campaign = await self.campaign_repo.get_campaign_by_member(
+            campaign_id, current_user.id
+        )
+        if campaign is None:
+            raise NotFoundError("Кампания не найдена")
+        return campaign
+
     async def revoke_invite_code(
         self, current_user: User, campaign_id: int
     ) -> Campaign:

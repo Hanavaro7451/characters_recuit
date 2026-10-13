@@ -1,3 +1,4 @@
+from fastapi import status
 from fastapi.routing import APIRouter
 
 from app.api.deps import CurrentUserDependency, UserServiceDependency
@@ -6,12 +7,12 @@ from app.schemas.user import UserResponse, UserUpdate
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def get_profile_rt(current_user: CurrentUserDependency) -> UserResponse:
     return UserResponse.model_validate(current_user)
 
 
-@router.patch("/me", response_model=UserResponse)
+@router.patch("/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def update_profile_rt(
     payload: UserUpdate,
     current_user: CurrentUserDependency,
@@ -21,7 +22,11 @@ async def update_profile_rt(
     return UserResponse.model_validate(updated_user)
 
 
-@router.delete("/me", response_model=UserResponse)
+@router.delete(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def delete_profile_rt(
     current_user: CurrentUserDependency,
     service: UserServiceDependency,

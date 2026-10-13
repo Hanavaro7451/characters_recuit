@@ -1,4 +1,6 @@
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
+from uuid import UUID
 
 import jwt
 import pytest
@@ -8,8 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.security import JWTManager
 from app.models import User
+from app.models.auth_session import AuthSession
+from app.repositories.auth_session import AuthSessionRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
+
+SESSION_ID = UUID("a652fc0d-2c05-4ecf-a3ea-7f1398a5d502")
 
 
 @pytest.fixture
@@ -36,6 +42,13 @@ def service(
     auth_service = AuthService(session)
     auth_service.repo = repo
     auth_service.token_manager = token_manager
+    auth_service.session_repo = AsyncMock(spec=AuthSessionRepository)
+    auth_service.session_repo.get_by_id.return_value = AuthSession(
+        id=SESSION_ID,
+        user_id=1,
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        revoked_at=None,
+    )
     return auth_service
 
 
@@ -113,6 +126,7 @@ async def test_get_current_user_returns_active_user(
     token_manager.decode_token.return_value = {
         "sub": "1",
         "type": "access",
+        "sid": str(SESSION_ID),
     }
     repo.get_by_id.return_value = user
 
@@ -138,7 +152,7 @@ async def test_get_current_user_rejects_invalid_claims(
     token_manager: Mock,
     payload: dict[str, object],
 ) -> None:
-    token_manager.decode_token.return_value = payload
+    token_manager.decode_token.return_value = {"sid": str(SESSION_ID), **payload}
 
     with pytest.raises(UnauthorizedError):
         await service.get_current_user("access-token")
@@ -180,6 +194,7 @@ async def test_get_current_user_rejects_unavailable_user(
     token_manager.decode_token.return_value = {
         "sub": "1",
         "type": "access",
+        "sid": str(SESSION_ID),
     }
     repo.get_by_id.return_value = user
 

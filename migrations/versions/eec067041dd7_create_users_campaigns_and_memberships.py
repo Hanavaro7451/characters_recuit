@@ -110,4 +110,6 @@ def downgrade() -> None:
     op.drop_table("campaign_members")
     op.drop_table("campaigns")
     op.drop_table("users")
+    sa.Enum(name="campaignmemberrole").drop(op.get_bind(), checkfirst=True)
+    sa.Enum(name="campaignstatus").drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###

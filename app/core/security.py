@@ -1,5 +1,8 @@
+import hashlib
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import UUID, uuid4
 
 import jwt
 from pwdlib import PasswordHash
@@ -28,12 +31,14 @@ class JWTManager:
         self._token_algorithm = settings.jwt_algorithm
         self._token_secret = settings.jwt_secret_key.get_secret_value()
 
-    def create_access_token(self, user_id: int) -> str:
+    def create_access_token(self, user_id: int, session_id: UUID) -> str:
         """Create JWT token method"""
         expires_at = datetime.now(UTC) + timedelta(minutes=self._access_token_ttl)
 
         payload = {
             "sub": str(user_id),
+            "sid": str(session_id),
+            "jti": str(uuid4()),
             "type": "access",
             "exp": expires_at,
         }
@@ -51,6 +56,14 @@ class JWTManager:
             self._token_secret,
             algorithms=[self._token_algorithm],
             options={
-                "require": ["sub", "type", "exp"],
+                "require": ["sub", "sid", "type", "exp"],
             },
         )
+
+
+def generate_refresh_token() -> str:
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

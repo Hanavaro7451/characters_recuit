@@ -28,7 +28,7 @@ async def readiness(
 ) -> HealthResponse | JSONResponse:
     try:
         await session.execute(text("SELECT 1"))
-    except SQLAlchemyError:
+    except (SQLAlchemyError, OSError, TimeoutError):
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "database unavailable"},
