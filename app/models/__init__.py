@@ -1,3 +1,4 @@
+from app.models.ability_distribution import AbilityDistribution
 from app.models.ability_roll import AbilityRollResult, AbilityRollSet
 from app.models.auth_session import AuthSession, RefreshToken
 from app.models.campaign import Campaign, CampaignMember
@@ -17,4 +18,5 @@ __all__ = [
     "RefreshToken",
     "AbilityRollSet",
     "AbilityRollResult",
+    "AbilityDistribution",
 ]

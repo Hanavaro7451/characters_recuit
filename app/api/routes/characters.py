@@ -5,6 +5,10 @@ from fastapi import APIRouter, Body, Path, Request, Response, status
 from app.api.deps import CharacterServiceDependency, CurrentUserDependency
 from app.core.exceptions import UnprocessableError
 from app.models.character import Character
+from app.schemas.ability_distribution import (
+    AbilityDistributionResponse,
+    AbilityDistributionSave,
+)
 from app.schemas.ability_roll import AbilityRollGenerate, AbilityRollSetResponse
 from app.schemas.catalog import BackgroundVersionResponse, CatalogVersionResponse
 from app.schemas.character import CharacterCreate, CharacterPatch, CharacterResponse
@@ -127,3 +131,34 @@ async def generate_ability_rolls(
     if not created:
         response.status_code = status.HTTP_200_OK
     return AbilityRollSetResponse.from_model(roll_set)
+
+
+@router.get(
+    "/{campaign_id}/characters/{character_id}/ability-distribution",
+    response_model=AbilityDistributionResponse,
+)
+async def get_ability_distribution(
+    campaign_id: CampaignId,
+    character_id: CharacterId,
+    current_user: CurrentUserDependency,
+    service: CharacterServiceDependency,
+) -> AbilityDistributionResponse:
+    return await service.get_ability_distribution(
+        campaign_id, character_id, current_user
+    )
+
+
+@router.put(
+    "/{campaign_id}/characters/{character_id}/ability-distribution",
+    response_model=AbilityDistributionResponse,
+)
+async def save_ability_distribution(
+    campaign_id: CampaignId,
+    character_id: CharacterId,
+    payload: AbilityDistributionSave,
+    current_user: CurrentUserDependency,
+    service: CharacterServiceDependency,
+) -> AbilityDistributionResponse:
+    return await service.save_ability_distribution(
+        campaign_id, character_id, current_user, payload
+    )

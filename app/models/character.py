@@ -60,9 +60,13 @@ class Character(Base, TimestampMixin):
     ability_roll_set: Mapped["AbilityRollSet | None"] = relationship(
         "AbilityRollSet", back_populates="character", uselist=False
     )
+    ability_distribution: Mapped["AbilityDistribution | None"] = relationship(
+        "AbilityDistribution", back_populates="character", uselist=False
+    )
 
 
 if TYPE_CHECKING:
+    from app.models.ability_distribution import AbilityDistribution
     from app.models.ability_roll import AbilityRollSet
     from app.models.campaign import CampaignMember
     from app.models.catalog import BackgroundCatalog, ClassCatalog, SpeciesCatalog

@@ -18,6 +18,9 @@ class AbilityRollSet(Base):
     __tablename__ = "ability_roll_sets"
     __table_args__ = (
         UniqueConstraint("character_id", name="uq_ability_roll_sets_character"),
+        UniqueConstraint(
+            "character_id", "id", name="uq_ability_roll_sets_character_id"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -40,6 +43,7 @@ class AbilityRollSet(Base):
 class AbilityRollResult(Base):
     __tablename__ = "ability_roll_results"
     __table_args__ = (
+        UniqueConstraint("roll_set_id", "id", name="uq_ability_roll_results_set_id"),
         UniqueConstraint(
             "roll_set_id", "position", name="uq_ability_roll_results_position"
         ),

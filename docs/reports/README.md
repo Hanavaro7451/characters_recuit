@@ -13,5 +13,6 @@
 | 06 | Основа справочников персонажа | [2026-10-05-06-character-catalog-foundation.md](2026-10-05-06-character-catalog-foundation.md) |
 | 07 | API справочников и черновика | [2026-10-13-07-character-draft-api.md](2026-10-13-07-character-draft-api.md) |
 | 08 | Однократная генерация характеристик | [2026-10-13-08-one-time-ability-rolls.md](2026-10-13-08-one-time-ability-rolls.md) |
+| 09 | Распределение характеристик и бонусы предыстории | [2026-10-13-09-ability-distribution.md](2026-10-13-09-ability-distribution.md) |
 
 Текущие статусы команды: [TEAM_STATUS.md](../TEAM_STATUS.md).
